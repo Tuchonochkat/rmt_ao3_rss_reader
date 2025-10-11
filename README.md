@@ -220,6 +220,41 @@ nano .env
 - ✅ Romance (романтические)
 - ✅ Established Relationship (устоявшиеся отношения)
 
+## Развертывание на Railway
+
+### Быстрый старт
+
+1. **Подключите GitHub репозиторий** к Railway
+2. **Добавьте Redis сервис** в ваш проект
+3. **Настройте переменные окружения**:
+   ```
+   TELEGRAM_BOT_TOKEN=your_bot_token_here
+   TELEGRAM_CHANNEL_ID=your_channel_id_here
+   REDIS_URL=redis://your-redis-url
+   ```
+4. **Деплой автоматически запустится**
+
+### Подробная настройка
+
+См. файл [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) для детальных инструкций.
+
+### Railway CLI
+
+```bash
+# Установка Railway CLI
+npm install -g @railway/cli
+
+# Логин и подключение к проекту
+railway login
+railway link
+
+# Деплой
+railway up
+
+# Просмотр логов
+railway logs
+```
+
 ## Структура проекта
 
 ```

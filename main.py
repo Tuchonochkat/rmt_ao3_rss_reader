@@ -19,7 +19,7 @@ from telegram_bot.bot import RSSBot
 logging.basicConfig(
     level=getattr(logging, Config.LOG_LEVEL.upper()),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler("rss_parser.log")],
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 
 logger = logging.getLogger(__name__)

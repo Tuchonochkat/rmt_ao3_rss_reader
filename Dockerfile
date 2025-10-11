@@ -34,8 +34,5 @@ USER appuser
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Создаем volume для логов
-VOLUME ["/app/logs"]
-
 # Команда по умолчанию
 CMD ["/uv/bin/uv", "run", "python", "main.py"]
