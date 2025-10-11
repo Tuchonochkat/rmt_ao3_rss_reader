@@ -206,31 +206,65 @@ class FullSystemService:
         logger.info("Запуск полной системы: RSS парсер + Telegram бот")
 
         # Инициализируем оба сервиса
+        logger.info("Инициализация RSS парсер сервиса...")
         if not await self.parser_service.initialize():
+            logger.error("Ошибка инициализации RSS парсер сервиса")
             return False
+        logger.info("RSS парсер сервис инициализирован успешно")
 
+        logger.info("Инициализация Telegram бот сервиса...")
         if not await self.bot_service.initialize():
+            logger.error("Ошибка инициализации Telegram бот сервиса")
             return False
+        logger.info("Telegram бот сервис инициализирован успешно")
 
         self.running = True
 
         # Запускаем оба сервиса параллельно
+        logger.info("Запуск RSS парсер сервиса...")
         parser_task = asyncio.create_task(self.parser_service.start())
+
+        logger.info("Запуск Telegram бот сервиса...")
         bot_task = asyncio.create_task(self.bot_service.start())
 
         try:
-            # Ждем завершения любого из сервисов
-            done, pending = await asyncio.wait(
-                [parser_task, bot_task], return_when=asyncio.FIRST_COMPLETED
-            )
+            # Ждем завершения обоих сервисов
+            logger.info("Ожидание завершения сервисов...")
 
-            # Отменяем оставшиеся задачи
-            for task in pending:
-                task.cancel()
+            # Создаем задачи для мониторинга
+            tasks = [parser_task, bot_task]
+
+            while self.running:
                 try:
-                    await task
+                    # Ждем завершения любого из сервисов
+                    done, pending = await asyncio.wait(
+                        tasks, return_when=asyncio.FIRST_COMPLETED
+                    )
+
+                    # Проверяем результаты
+                    for task in done:
+                        try:
+                            result = await task
+                            if result is False:
+                                logger.error("Один из сервисов завершился с ошибкой")
+                                self.running = False
+                                break
+                        except Exception as e:
+                            logger.error(f"Сервис завершился с ошибкой: {e}")
+                            self.running = False
+                            break
+
+                    # Если все задачи завершены, выходим
+                    if not pending:
+                        logger.info("Все сервисы завершили работу")
+                        break
+
                 except asyncio.CancelledError:
-                    pass
+                    logger.info("Получен сигнал отмены")
+                    break
+                except Exception as e:
+                    logger.error(f"Ошибка в мониторинге сервисов: {e}")
+                    break
 
         except Exception as e:
             logger.error(f"Ошибка в полной системе: {e}")
@@ -251,9 +285,25 @@ class FullSystemService:
 async def main():
     """Главная функция"""
     logger.info("Запуск полной системы: RSS парсер + Telegram бот")
+
+    # Проверяем конфигурацию
+    try:
+        Config.validate()
+        logger.info("Конфигурация валидна")
+    except Exception as e:
+        logger.error(f"Ошибка конфигурации: {e}")
+        return 1
+
     logger.info(f"Интервал проверки RSS: {Config.CHECK_INTERVAL_MINUTES} минут")
     logger.info(f"Интервал отправки сообщений: {Config.SEND_INTERVAL_SECONDS} секунд")
     logger.info(f"Дней для проверки повторных отправок: {Config.DAYS_TO_CHECK}")
+
+    # Проверяем количество RSS лент
+    feed_urls = Config.get_rss_feed_urls()
+    logger.info(f"Настроено RSS лент: {len(feed_urls)}")
+    if not feed_urls:
+        logger.error("Не настроено ни одной RSS ленты!")
+        return 1
 
     # Создаем полную систему
     system = FullSystemService()
@@ -267,13 +317,19 @@ async def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
+        logger.info("Начинаем запуск системы...")
         await system.start()
+        logger.info("Система успешно запущена")
     except KeyboardInterrupt:
         logger.info("Получен сигнал прерывания")
     except Exception as e:
         logger.error(f"Критическая ошибка: {e}")
+        import traceback
+
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return 1
     finally:
+        logger.info("Останавливаем систему...")
         await system.stop()
 
     logger.info("Полная система завершена")
