@@ -71,6 +71,11 @@ railway logs
 ### Ошибка "VOLUME keyword is banned"
 - ✅ Исправлено: удалена строка `VOLUME ["/app/logs"]` из Dockerfile
 
+### Ошибка "Readme file does not exist: README.md"
+- ✅ Исправлено: README.md теперь копируется до установки зависимостей
+- ✅ Исправлено: убрано исключение README.md из .dockerignore
+- Если проблема повторяется, можно временно убрать `readme = "README.md"` из pyproject.toml
+
 ### Проблемы с Redis подключением
 - Убедитесь, что `REDIS_URL` правильно настроен
 - Проверьте, что Redis сервис запущен в Railway

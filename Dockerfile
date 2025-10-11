@@ -15,13 +15,13 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем файлы зависимостей
-COPY pyproject.toml uv.lock ./
+# Копируем файлы зависимостей и README
+COPY pyproject.toml uv.lock README.md ./
 
 # Устанавливаем зависимости
 RUN /uv/bin/uv sync --frozen
 
-# Копируем исходный код
+# Копируем остальной исходный код
 COPY . .
 
 # Создаем директорию для логов

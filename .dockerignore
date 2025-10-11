@@ -46,8 +46,7 @@ logs/
 .gitignore
 
 # Documentation
-README.md
-*.md
+# README.md is needed for pyproject.toml
 
 # Development files
 Makefile
