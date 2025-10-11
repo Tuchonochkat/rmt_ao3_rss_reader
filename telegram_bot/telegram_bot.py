@@ -18,6 +18,9 @@ class TelegramNotifier:
     async def send_message(self, message: str, parse_mode: str = "HTML") -> bool:
         """Отправляет сообщение в канал"""
         try:
+            logger.info(f"Отправляем сообщение в канал {self.channel_id}")
+            logger.debug(f"Содержимое сообщения: {message[:200]}...")
+
             await self.bot.send_message(
                 chat_id=self.channel_id,
                 text=message,
@@ -29,9 +32,13 @@ class TelegramNotifier:
 
         except TelegramError as e:
             logger.error(f"Ошибка при отправке сообщения в Telegram: {e}")
+            logger.error(f"Тип ошибки: {type(e).__name__}")
             return False
         except Exception as e:
             logger.error(f"Неожиданная ошибка при отправке сообщения: {e}")
+            import traceback
+
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return False
 
     async def send_multiple_messages(self, messages: List[str]) -> int:
@@ -50,10 +57,12 @@ class TelegramNotifier:
     async def test_connection(self) -> bool:
         """Проверяет соединение с Telegram API"""
         try:
+            logger.info("Проверяем подключение к Telegram API...")
             me = await self.bot.get_me()
             logger.info(f"Бот подключен: @{me.username}")
 
             # Проверяем доступ к каналу
+            logger.info(f"Проверяем доступ к каналу {self.channel_id}...")
             try:
                 chat = await self.bot.get_chat(self.channel_id)
                 logger.info(f"Доступ к каналу: {chat.title}")
@@ -67,6 +76,9 @@ class TelegramNotifier:
             return False
         except Exception as e:
             logger.error(f"Неожиданная ошибка при проверке соединения: {e}")
+            import traceback
+
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return False
 
     def format_entry_for_telegram(self, entry: Dict) -> str:

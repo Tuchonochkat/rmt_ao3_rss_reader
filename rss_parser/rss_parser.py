@@ -167,8 +167,12 @@ class RSSParser:
                     await self.redis.save_fanfic_metadata(work_id, entry_data)
 
                     # Проверяем, не отправлялось ли сообщение недавно
+                    logger.info(f"Проверяем, отправлялся ли work {work_id} недавно...")
                     was_sent_recently = await self.redis.was_message_sent_recently(
                         work_id, Config.DAYS_TO_CHECK
+                    )
+                    logger.info(
+                        f"Work {work_id} отправлялся недавно: {was_sent_recently}"
                     )
 
                     if was_sent_recently:
@@ -177,6 +181,7 @@ class RSSParser:
                         )
                     else:
                         # Добавляем в очередь только если не отправлялся недавно
+                        logger.info(f"Добавляем work {work_id} в очередь...")
                         await self.redis.add_to_queue(work_id)
                         logger.info(
                             f"Добавлен work {work_id} в очередь и сохранены метаданные"
