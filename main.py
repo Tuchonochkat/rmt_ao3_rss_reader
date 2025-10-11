@@ -166,8 +166,8 @@ class BotService:
         self.running = True
         logger.info("Telegram бот запущен")
 
-        # Запускаем периодическую обработку
-        self.task = asyncio.create_task(self.bot.run_periodic_processing())
+        # Запускаем бота
+        self.task = asyncio.create_task(self.bot.start())
         try:
             await self.task
         except asyncio.CancelledError:

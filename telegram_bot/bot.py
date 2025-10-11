@@ -136,18 +136,34 @@ class RSSBot:
         """Запускает бота"""
         logger.info("Запуск RSS бота...")
 
+        # Проверяем переменные окружения
+        logger.info(
+            f"TELEGRAM_BOT_TOKEN: {'установлен' if Config.TELEGRAM_BOT_TOKEN else 'НЕ УСТАНОВЛЕН'}"
+        )
+        logger.info(
+            f"TELEGRAM_CHANNEL_ID: {'установлен' if Config.TELEGRAM_CHANNEL_ID else 'НЕ УСТАНОВЛЕН'}"
+        )
+        logger.info(
+            f"REDIS_URL: {'установлен' if Config.REDIS_URL else 'НЕ УСТАНОВЛЕН'}"
+        )
+
         # Подключаемся к Redis
+        logger.info("Подключаемся к Redis...")
         await self.redis.connect()
+        logger.info("Подключение к Redis установлено")
 
         # Проверяем соединение с Telegram
+        logger.info("Проверяем соединение с Telegram...")
         if not await self.telegram_notifier.test_connection():
             logger.error("Не удалось подключиться к Telegram")
             return False
+        logger.info("Соединение с Telegram установлено")
 
         self.running = True
         logger.info("RSS бот запущен")
 
         # Запускаем периодическую обработку
+        logger.info("Запускаем периодическую обработку...")
         self.task = asyncio.create_task(self.run_periodic_processing())
         try:
             await self.task
