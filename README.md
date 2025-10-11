@@ -64,6 +64,9 @@ cp config.env.example .env
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
 TELEGRAM_CHANNEL_ID=@your_channel_username
 
+# Redis Configuration
+REDIS_URL=redis://localhost:6379/0
+
 # RSS Configuration
 # Поддержка множественных RSS лент (через запятую)
 RSS_FEED_URLS=https://archiveofourown.org/works/feed,https://archiveofourown.org/tags/Real%20Person%20Fiction/feed,https://archiveofourown.org/tags/Fluff/feed
@@ -93,7 +96,7 @@ make setup
 
 ```bash
 # С помощью uv
-uv run python test_bot.py
+uv run python telegram_bot/test_bot.py
 
 # Или используя скрипт из pyproject.toml
 uv run rss-bot-test
@@ -107,13 +110,28 @@ make test
 - Отправит тестовое сообщение
 - Выполнит одну проверку RSS ленты
 
+### Запуск RSS парсера
+
+Для периодической проверки RSS лент:
+
+```bash
+# С помощью uv
+uv run python main.py
+
+# Или используя скрипт из pyproject.toml
+uv run rss-parser
+
+# Или через Makefile
+make parser
+```
+
 ### Запуск бота
 
 Для постоянной работы:
 
 ```bash
 # С помощью uv
-uv run python run_bot.py
+uv run python telegram_bot/run_bot.py
 
 # Или используя скрипт из pyproject.toml
 uv run rss-bot-run
@@ -125,7 +143,7 @@ make run
 Или напрямую:
 
 ```bash
-uv run python bot.py
+uv run python telegram_bot/bot.py
 ```
 
 ### Команды Makefile
@@ -205,24 +223,27 @@ nano .env
 ## Структура проекта
 
 ```
-RMT/
-├── bot.py                 # Основная логика бота
-├── config.py             # Конфигурация
-├── rss_parser.py         # Парсер RSS лент
-├── telegram_bot.py       # Работа с Telegram API
-├── test_bot.py           # Скрипт тестирования
-├── run_bot.py            # Скрипт запуска
-├── pyproject.toml        # Конфигурация проекта и зависимости
-├── uv.lock              # Фиксированные версии зависимостей
-├── Makefile             # Команды для удобства разработки
-├── scripts/             # Вспомогательные скрипты
-│   ├── setup.sh         # Автоматическая настройка
-│   ├── dev.sh           # Режим разработки
-│   └── format.sh        # Форматирование кода
-├── config.env.example    # Пример конфигурации
-├── config.rmt.example    # Готовая конфигурация для РМТ
-├── README.md            # Документация
-└── bot_state.json       # Состояние бота (создается автоматически)
+RMT_AO3_RSS/
+├── config.py                    # Конфигурация
+├── pyproject.toml               # Конфигурация проекта и зависимости
+├── uv.lock                      # Фиксированные версии зависимостей
+├── Makefile                     # Команды для удобства разработки
+├── README.md                    # Документация
+├── main.py                      # Главный скрипт RSS парсера
+├── rss_parser/                  # Парсер RSS лент
+│   ├── __init__.py
+│   └── rss_parser.py            # Основная логика парсинга RSS
+├── telegram_bot/                # Работа с Telegram API
+│   ├── __init__.py
+│   ├── bot.py                   # Основная логика бота
+│   ├── telegram_bot.py          # Класс для работы с Telegram API
+│   ├── run_bot.py               # Скрипт запуска
+│   └── test_bot.py              # Скрипт тестирования
+├── scripts/                     # Вспомогательные скрипты
+│   ├── setup.sh                 # Автоматическая настройка
+│   ├── dev.sh                   # Режим разработки
+│   └── format.sh                # Форматирование кода
+└── bot_state.json               # Состояние бота (создается автоматически)
 ```
 
 ## Логирование
@@ -250,7 +271,7 @@ cat bot_state.json
 ```bash
 # Остановка (Ctrl+C)
 # Запуск
-uv run python run_bot.py
+uv run python telegram_bot/run_bot.py
 # или
 uv run rss-bot-run
 ```
@@ -279,7 +300,7 @@ uv run rss-bot-run
 
 ```bash
 # Запуск с подробными логами
-LOG_LEVEL=DEBUG uv run python test_bot.py
+LOG_LEVEL=DEBUG uv run python telegram_bot/test_bot.py
 ```
 
 ## Автоматический запуск
@@ -314,21 +335,90 @@ sudo systemctl start rss-bot.service
 
 ### Docker
 
-Создайте `Dockerfile`:
+#### Быстрый запуск
 
-```dockerfile
-FROM python:3.11-slim
+```bash
+# Сборка образа
+make docker-build
 
-# Установка uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uv/bin/uv
+# Запуск контейнера
+make docker-run
 
-WORKDIR /app
-COPY pyproject.toml uv.lock ./
-RUN /uv/bin/uv sync --frozen
+# Или запуск в фоне
+make docker-run-bg
+```
 
-COPY . .
+#### Ручной запуск
 
-CMD ["/uv/bin/uv", "run", "python", "run_bot.py"]
+```bash
+# Сборка образа
+docker build -t rmt-ao3-rss .
+
+# Запуск контейнера
+docker run --rm -it --name rmt-ao3-rss rmt-ao3-rss
+
+# Или запуск в фоне
+docker run -d --name rmt-ao3-rss rmt-ao3-rss
+```
+
+#### Конфигурация
+
+1. Скопируйте `docker.env.example` в `.env`:
+```bash
+cp docker.env.example .env
+```
+
+2. Отредактируйте `.env` файл с вашими настройками:
+```bash
+# Redis настройки (внешний Redis)
+REDIS_URL=redis://your-redis-host:6379
+
+# Telegram настройки
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHANNEL_ID=your_channel_id_here
+
+# Настройки парсера
+CHECK_INTERVAL_MINUTES=30
+DAYS_TO_CHECK=3
+LOG_LEVEL=INFO
+```
+
+3. Запуск с переменными окружения:
+```bash
+docker run --rm -it --env-file .env --name rmt-ao3-rss rmt-ao3-rss
+```
+
+#### Docker команды
+
+```bash
+make docker-build      # Сборка образа
+make docker-run        # Запуск контейнера (интерактивно)
+make docker-run-bg     # Запуск контейнера в фоне
+make docker-stop       # Остановка контейнера
+make docker-rm         # Удаление контейнера
+make docker-logs       # Просмотр логов
+make docker-shell      # Вход в контейнер
+make docker-clean      # Очистка ресурсов
+make docker-status      # Статус контейнера
+```
+
+#### Прямые Docker команды
+
+```bash
+# Сборка образа
+docker build -t rmt-ao3-rss .
+
+# Запуск с переменными окружения
+docker run --rm -it --env-file .env --name rmt-ao3-rss rmt-ao3-rss
+
+# Запуск в фоне
+docker run -d --env-file .env --name rmt-ao3-rss rmt-ao3-rss
+
+# Просмотр логов
+docker logs -f rmt-ao3-rss
+
+# Остановка
+docker stop rmt-ao3-rss
 ```
 
 ## Лицензия

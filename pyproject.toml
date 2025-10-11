@@ -14,6 +14,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "schedule>=1.2.0",
     "beautifulsoup4>=4.12.0",
+    "redis>=6.4.0",
 ]
 
 [project.optional-dependencies]
@@ -25,9 +26,10 @@ dev = [
 ]
 
 [project.scripts]
-rss-bot = "bot:main"
-rss-bot-test = "test_bot:test_bot"
-rss-bot-run = "run_bot:main"
+rss-bot = "telegram_bot.bot:main"
+rss-bot-test = "telegram_bot.test_bot:cli_main"
+rss-bot-run = "telegram_bot.run_bot:main"
+rss-parser = "main:cli_main"
 
 [build-system]
 requires = ["hatchling"]

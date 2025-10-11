@@ -71,33 +71,58 @@ class TelegramNotifier:
 
     def format_entry_for_telegram(self, entry: Dict) -> str:
         """Форматирует запись для отправки в Telegram"""
-        title = entry["title"]
-        link = entry["link"]
-        author = entry["author"]
-        description = entry["description"]
-        tags = entry["tags"]
-
-        # Очищаем HTML теги из описания
+        import html
         import re
 
-        clean_description = re.sub(r"<[^>]+>", "", description)
-        clean_description = clean_description.strip()
+        # Очищаем все поля от HTML
+        title = html.unescape(entry["title"])
+        title = re.sub(r"<[^>]+>", "", title).strip()
 
-        # Ограничиваем длину описания
-        if len(clean_description) > 300:
-            clean_description = clean_description[:300] + "..."
+        # Заменяем домен .org на .gay в ссылке
+        link = entry["link"].replace("archiveofourown.org", "archiveofourown.gay")
 
-        # Формируем сообщение
-        message = f"📚 <b>{title}</b>\n\n"
-        message += f"👤 Автор: {author}\n"
+        author = html.unescape(entry["author"])
+        author = re.sub(r"<[^>]+>", "", author).strip()
 
-        if clean_description:
-            message += f"📝 {clean_description}\n"
+        # Формируем сообщение в нужном формате
+        message = f"\n<a href='{link}'><b>✨✨✨{title}✨✨✨</b></a>\n"
+        message += f"👤 <b>Автор:</b> {author}\n"
 
-        if tags:
-            tags_str = ", ".join(tags[:5])  # Показываем только первые 5 тегов
-            message += f"🏷️ Теги: {tags_str}\n"
+        # Фандом
+        if entry.get("fandom"):
+            message += f"🌍 <b>Фандом:</b> {entry['fandom']}\n"
 
-        message += f"\n🔗 <a href='{link}'>Читать на AO3</a>"
+        # Рейтинг
+        if entry.get("rating"):
+            message += f"⭐ <b>Рейтинг:</b> {entry['rating']}\n"
+
+        # Категория
+        if entry.get("category"):
+            message += f"📂 <b>Категория:</b> {entry['category']}\n"
+
+        # Предупреждения (показываем только если есть реальные предупреждения)
+        if entry.get("warnings") and entry["warnings"] != "No Archive Warnings Apply":
+            message += f"⚠️ <b>Предупреждения:</b> {entry['warnings']}\n"
+
+        # Пейринги и персонажи
+        relationships = entry.get("relationships", "")
+        characters = entry.get("characters", "")
+        if relationships or characters:
+            # Выделяем пейринги жирным
+            if relationships:
+                relationships = f"<b>{relationships}</b>"
+            message += f"💕 <b>Пейринг и персонажи:</b> {relationships}, {characters}\n"
+
+        # Количество слов
+        if entry.get("words"):
+            message += f"📝 <b>Кол-во слов:</b> {entry['words']}\n"
+
+        # Теги
+        if entry.get("additional_tags"):
+            message += f"🏷️ <b>Тэги:</b> {entry['additional_tags']}\n"
+
+        # Описание
+        if entry.get("summary"):
+            message += f"📖 <b>Описание:</b> {entry['summary']}"
 
         return message

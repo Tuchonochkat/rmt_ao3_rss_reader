@@ -9,6 +9,8 @@ load_dotenv()
 class Config:
     """Конфигурация приложения"""
 
+    REDIS_URL = os.getenv("REDIS_URL")
+
     # Telegram настройки
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
     TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID")
@@ -19,11 +21,29 @@ class Config:
 
     # Словарь RSS лент: {ID: "Описание тега"}
     RSS_FEEDS = {
-        "31415212": "Russian Actor RPF",  # Русские актеры РМТ
-        # "136512": "Harry Potter - J. K. Rowling",  # Милые работы
+        "31415212": "Russian Actor RPF",
+        "64246090": "Икар - Круглов/Макуни | Icarus - Kruglov/Makuni",
+        "60197176": "Последнее испытание - Круглов и Ханпира | The Last Trial - Kruglov & Khanpira",
+        "86160696": "Лэ о Лэйтиан - Смеркович и Сидоренко | The Lay of Leithian - Smerkovich & Sidorenko",
+        "121446937": "Книга Стихий - Антипов&Мажуга/Батурина&Ересина | Book of Elements - Antipov&Mazhuga/Baturina&Eresina",
+        "120823408": " Эльфийская Рукопись - Эпидемия | Elven Manuscript - Epidemia (Albums)",
+        "143279551": "Детективная сага — Ярослав Баярунас",
+        "130948627": "Жанна д‘Арк - Бочарова/Воробьёва/Каковиди/Сусоров | Joan of Arc - Bocharova/Vorobyova/Kakovidi/Susorov",
+        "68767828": "Монте Кристо - Игнатьев/Ким | Monte Cristo - Ignatiev/Kim",
+        "94785088": "Орфей - Вайнер | Orpheus - Weiner",  # всего 12 работ
+        # "504856": "Jesus Christ Superstar - Webber/Rice",  # тут надо фильтроваться по языку
+        "23355485": "The Grinning Man - Philips & Teitler/Grose & Morris & Philips & Teitler/Grose",
+        "107185864": "Вий - Байдо и Загот/Захарова/Петрановская | Viy - Baido & Zagot/Zakharova/Petranovskaya",  # всего 6 работ
+        "116213980": "Айсвилль - Загот/Рубинский | Iceville - Zagot/Rubinsky",
     }
 
     CHECK_INTERVAL_MINUTES = int(os.getenv("CHECK_INTERVAL_MINUTES", "30"))
+
+    # Количество дней для проверки повторных отправок
+    DAYS_TO_CHECK = int(os.getenv("DAYS_TO_CHECK", "3"))
+
+    # Интервал отправки сообщений (минуты)
+    SEND_INTERVAL_SECONDS = int(os.getenv("SEND_INTERVAL_SECONDS", "5"))
 
     # Логирование
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -64,3 +84,5 @@ class Config:
             raise ValueError("TELEGRAM_CHANNEL_ID не установлен")
         if not cls.RSS_FEEDS:
             raise ValueError("RSS_FEEDS не настроены")
+        if not cls.REDIS_URL:
+            raise ValueError("REDIS_URL не установлен")

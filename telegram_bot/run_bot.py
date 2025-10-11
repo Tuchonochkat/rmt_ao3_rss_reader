@@ -8,7 +8,7 @@ import logging
 import signal
 import sys
 
-from bot import RSSBot
+from telegram_bot.bot import RSSBot
 
 # Настройка логирования
 logging.basicConfig(
@@ -49,18 +49,9 @@ class BotRunner:
             signal.signal(signal.SIGINT, self.signal_handler)
             signal.signal(signal.SIGTERM, self.signal_handler)
 
-            # Тестируем соединение
-            logger.info("Тестирование соединения...")
-            if not await self.bot.test_connection():
-                logger.error("Не удалось подключиться к Telegram")
-                return False
-
-            # Отправляем уведомление о запуске
-            await self.bot.send_test_message()
-
-            # Запускаем планировщик
-            logger.info("Запуск основного цикла...")
-            self.bot.run_scheduler()
+            # Запускаем бота
+            logger.info("Запуск бота...")
+            await self.bot.start()
 
         except Exception as e:
             logger.error(f"Критическая ошибка при запуске: {e}")

@@ -24,6 +24,10 @@ run: ## Запуск бота
 	@echo "🚀 Запуск бота..."
 	@uv run rss-bot-run
 
+parser: ## Запуск RSS парсера
+	@echo "📡 Запуск RSS парсера..."
+	@uv run rss-parser
+
 format: ## Форматирование кода
 	@echo "🎨 Форматирование кода..."
 	@./scripts/format.sh
@@ -47,3 +51,40 @@ update: ## Обновление зависимостей
 	@echo "🔄 Обновление зависимостей..."
 	@uv lock --upgrade
 	@uv sync
+
+# Docker команды
+docker-build: ## Сборка Docker образа
+	@echo "🐳 Сборка Docker образа..."
+	@./scripts/docker-simple.sh build
+
+docker-run: ## Запуск Docker контейнера
+	@echo "🐳 Запуск Docker контейнера..."
+	@./scripts/docker-simple.sh run
+
+docker-run-bg: ## Запуск Docker контейнера в фоне
+	@echo "🐳 Запуск Docker контейнера в фоне..."
+	@./scripts/docker-simple.sh run-bg
+
+docker-stop: ## Остановка Docker контейнера
+	@echo "🐳 Остановка Docker контейнера..."
+	@./scripts/docker-simple.sh stop
+
+docker-rm: ## Удаление Docker контейнера
+	@echo "🐳 Удаление Docker контейнера..."
+	@./scripts/docker-simple.sh rm
+
+docker-logs: ## Просмотр логов Docker контейнера
+	@echo "🐳 Просмотр логов..."
+	@./scripts/docker-simple.sh logs
+
+docker-shell: ## Вход в Docker контейнер
+	@echo "🐳 Вход в контейнер..."
+	@./scripts/docker-simple.sh shell
+
+docker-clean: ## Очистка Docker ресурсов
+	@echo "🐳 Очистка Docker ресурсов..."
+	@./scripts/docker-simple.sh clean
+
+docker-status: ## Статус Docker контейнера
+	@echo "🐳 Статус контейнера..."
+	@./scripts/docker-simple.sh status
