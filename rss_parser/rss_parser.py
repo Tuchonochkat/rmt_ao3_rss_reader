@@ -8,6 +8,7 @@ import feedparser
 
 from config import Config
 from utils.redis_connector import redis_connector
+from utils.schemas import UpdateReason
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,51 @@ class RSSParser:
         except Exception as e:
             logger.error(f"Ошибка извлечения work_id из записи: {e}")
             return None
+
+    def _extract_chapters(self, description: str) -> Optional[str]:
+        """Извлекает количество глав из описания работы"""
+        try:
+            # Ищем паттерн "Chapters: число"
+            chapters_match = re.search(r"Chapters:\s*(\d+)", description, re.IGNORECASE)
+            if chapters_match:
+                return chapters_match.group(1)
+
+            logger.debug("Не удалось извлечь количество глав из описания")
+            return None
+        except Exception as e:
+            logger.error(f"Ошибка извлечения количества глав: {e}")
+            return None
+
+    def _extract_language(self, description: str) -> Optional[str]:
+        """Извлекает язык из описания работы"""
+        try:
+            # Ищем паттерн "Language: язык"
+            language_match = re.search(
+                r"Language:\s*([^<\n]+)", description, re.IGNORECASE
+            )
+            if language_match:
+                language = language_match.group(1).strip()
+                # Убираем HTML теги если есть
+                language = re.sub(r"<[^>]+>", "", language).strip()
+                return language
+
+            logger.debug("Не удалось извлечь язык из описания")
+            return None
+        except Exception as e:
+            logger.error(f"Ошибка извлечения языка: {e}")
+            return None
+
+    def _extract_author(self, entry) -> str:
+        """Извлекает автора из записи RSS"""
+        try:
+            import html
+
+            author = html.unescape(entry.get("author", "Неизвестный автор"))
+            author = re.sub(r"<[^>]+>", "", author).strip()
+            return author
+        except Exception as e:
+            logger.error(f"Ошибка извлечения автора: {e}")
+            return "Неизвестный автор"
 
     def _extract_updated_date(self, entry) -> Optional[str]:
         """Извлекает дату обновления из записи RSS (только дата, без времени)"""
@@ -141,25 +187,61 @@ class RSSParser:
                     logger.warning("Не удалось извлечь work_id из записи")
                     continue
 
-                updated_date = self._extract_updated_date(entry)
+                # Проверяем язык работы
+                description = entry.get("summary", "")
+                language = self._extract_language(description)
+                if language and language.lower() not in ["русский", "russian", "ru"]:
+                    logger.info(
+                        f"Пропускаем work {work_id} - язык не русский: {language}"
+                    )
+                    continue
+
+                # Извлекаем автора и количество глав для сравнения
+                current_author = self._extract_author(entry)
+                current_chapters = self._extract_chapters(description)
 
                 # Проверяем, есть ли данные в Redis
                 existing_metadata = await self.redis.get_fanfic_metadata(work_id)
 
-                if (
-                    existing_metadata
-                    and existing_metadata.get("updated_at") == updated_date
-                ):
-                    # Данные уже актуальны, пропускаем
-                    logger.debug(f"Work {work_id} уже актуален, пропускаем")
+                # Проверяем, нужно ли обновлять работу
+                needs_update = False
+                update_reason = None
+
+                if not existing_metadata:
+                    # Новая работа
+                    needs_update = True
+                    update_reason = UpdateReason.NEW
+                    logger.info(f"Новая работа {work_id}")
+                else:
+                    # Сравниваем автора и количество глав
+                    existing_author = existing_metadata.get("author", "")
+                    existing_chapters = existing_metadata.get("chapters", "")
+
+                    if current_author != existing_author:
+                        needs_update = True
+                        update_reason = UpdateReason.AUTHOR
+                        logger.info(
+                            f"Work {work_id} - изменился автор: '{existing_author}' -> '{current_author}'"
+                        )
+
+                    if current_chapters and current_chapters != existing_chapters:
+                        needs_update = True
+                        update_reason = UpdateReason.CHAPTER
+                        logger.info(
+                            f"Work {work_id} - изменилось количество глав: '{existing_chapters}' -> '{current_chapters}'"
+                        )
+
+                if not needs_update:
+                    # Данные не изменились, пропускаем
+                    logger.debug(f"Work {work_id} не изменился, пропускаем")
                     continue
 
-                # Нужно обновить или добавить данные
-                logger.info(f"Обрабатываем work {work_id} (дата: {updated_date})")
+                # Нужно обновить данные
+                logger.info(f"Обновляем work {work_id} (причина: {update_reason})")
 
                 # Парсим все поля записи
                 entry_data = await self._parse_entry(
-                    entry, work_id, updated_date, feed_url
+                    entry, work_id, feed_url, update_reason
                 )
 
                 if entry_data:
@@ -208,7 +290,7 @@ class RSSParser:
         return all_new_entries
 
     async def _parse_entry(
-        self, entry, work_id: str, updated_date: str, feed_url: str
+        self, entry, work_id: str, feed_url: str, update_reason: UpdateReason
     ) -> Optional[Dict]:
         """Парсит все поля записи RSS"""
         try:
@@ -219,13 +301,15 @@ class RSSParser:
             title = re.sub(r"<[^>]+>", "", title).strip()
 
             link = entry.get("link", "")
-            author = html.unescape(entry.get("author", "Неизвестный автор"))
-            author = re.sub(r"<[^>]+>", "", author).strip()
+            author = self._extract_author(entry)
 
             description = entry.get("summary", "")
 
             # Извлекаем метаданные из описания
             metadata = self._extract_metadata(description)
+
+            # Извлекаем дату обновления
+            updated_date = self._extract_updated_date(entry)
 
             # Формируем структурированные данные
             entry_data = {
@@ -236,6 +320,8 @@ class RSSParser:
                 "published": self._extract_published_date(entry),
                 "updated_at": updated_date,
                 "source_feed": feed_url,
+                "update_reason": update_reason.value,
+                "source": "RSS",
                 **metadata,  # Добавляем все извлеченные метаданные
             }
 
@@ -318,6 +404,16 @@ class RSSParser:
             if words_match:
                 metadata["words"] = words_match.group(1)
 
+            # Извлекаем количество глав
+            chapters = self._extract_chapters(description)
+            if chapters:
+                metadata["chapters"] = chapters
+
+            # Извлекаем язык
+            language = self._extract_language(description)
+            if language:
+                metadata["language"] = language
+
             # Извлекаем описание (саммари) - текст между параграфами
             paragraphs = soup.find_all("p")
             summary_parts = []
@@ -371,13 +467,20 @@ class RSSParser:
                 "relationships": r"Relationships:\s*<[^>]*>([^<]+)</a>",
                 "additional_tags": r"Additional Tags:\s*<[^>]*>([^<]+)</a>",
                 "words": r"Words:\s*(\d+)",
+                "chapters": r"Chapters:\s*(\d+)",
+                "language": r"Language:\s*([^<\n]+)",
             }
 
             for key, pattern in patterns.items():
                 matches = re.findall(pattern, clean_desc, re.IGNORECASE)
                 if matches:
-                    if key == "words":
+                    if key in ["words", "chapters"]:
                         metadata[key] = matches[0]
+                    elif key == "language":
+                        # Для языка убираем HTML теги
+                        language = matches[0].strip()
+                        language = re.sub(r"<[^>]+>", "", language).strip()
+                        metadata[key] = language
                     else:
                         metadata[key] = ", ".join(matches)
 

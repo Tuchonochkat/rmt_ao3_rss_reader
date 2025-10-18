@@ -31,7 +31,7 @@ class Config:
         "130948627": "Жанна д‘Арк - Бочарова/Воробьёва/Каковиди/Сусоров | Joan of Arc - Bocharova/Vorobyova/Kakovidi/Susorov",
         "68767828": "Монте Кристо - Игнатьев/Ким | Monte Cristo - Ignatiev/Kim",
         "94785088": "Орфей - Вайнер | Orpheus - Weiner",  # всего 12 работ
-        # "504856": "Jesus Christ Superstar - Webber/Rice",  # тут надо фильтроваться по языку
+        "504856": "Jesus Christ Superstar - Webber/Rice",
         "23355485": "The Grinning Man - Philips & Teitler/Grose & Morris & Philips & Teitler/Grose",
         "107185864": "Вий - Байдо и Загот/Захарова/Петрановская | Viy - Baido & Zagot/Zakharova/Petranovskaya",  # всего 6 работ
         "116213980": "Айсвилль - Загот/Рубинский | Iceville - Zagot/Rubinsky",

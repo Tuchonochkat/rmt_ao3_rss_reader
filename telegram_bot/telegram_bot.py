@@ -5,6 +5,8 @@ from typing import Dict, List
 from telegram import Bot
 from telegram.error import TelegramError
 
+from utils.schemas import UpdateReason
+
 logger = logging.getLogger(__name__)
 
 
@@ -97,6 +99,15 @@ class TelegramNotifier:
         author = re.sub(r"<[^>]+>", "", author).strip()
 
         # Формируем сообщение в нужном формате
+        if entry.get("update_reason") == UpdateReason.NEW.value:
+            message = "<b>🔍 Новая работа 🔍</b>\n"
+        elif entry.get("update_reason") == UpdateReason.AUTHOR.value:
+            message = "<b>🔍 Изменился автор 🔍</b>\n"
+        elif entry.get("update_reason") == UpdateReason.CHAPTER.value:
+            message = "<b>🔍 Новая глава 🔍</b>\n"
+        else:
+            message = "<b>🔍 Неизвестная причина обновления 🔍</b>\n"
+
         message = f"\n<a href='{link}'><b>✨✨✨{title}✨✨✨</b></a>\n"
         message += f"👤 <b>Автор:</b> {author}\n"
 
