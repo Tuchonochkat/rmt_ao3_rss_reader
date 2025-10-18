@@ -6,6 +6,7 @@ from datetime import datetime
 from config import Config
 from telegram_bot.telegram_bot import TelegramNotifier
 from utils.redis_connector import redis_connector
+from utils.schemas import Source
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +36,24 @@ class RSSBot:
                 f"Получены метаданные для work_id {work_id}: {metadata.get('title', 'Без названия')}"
             )
 
+            # Проверяем источник работы
+            source = metadata.get("source")
+            if source == Source.SEARCH.value:
+                # Если источник - поиск, переносим в конец очереди без отправки
+                logger.info(f"Work {work_id} из поиска - переносим в конец очереди")
+                await self.redis.add_to_queue(work_id)
+                logger.info(f"Work {work_id} добавлен в конец очереди")
+                return True
+
+            # Для RSS работ формируем и отправляем сообщение
+            logger.info(f"Work {work_id} из RSS - формируем сообщение")
+
             # Форматируем сообщение
             message = self.telegram_notifier.format_entry_for_telegram(metadata)
             logger.info(f"Сформировано сообщение длиной {len(message)} символов")
 
             # Отправляем сообщение
-            logger.info(f"Отправляем сообщение в Telegram...")
+            logger.info("Отправляем сообщение в Telegram...")
             success = await self.telegram_notifier.send_message(message)
             if not success:
                 logger.error(f"Не удалось отправить сообщение для work_id {work_id}")

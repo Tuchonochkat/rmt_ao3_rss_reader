@@ -7,3 +7,10 @@ class UpdateReason(Enum):
     NEW = "new"
     AUTHOR = "author"
     CHAPTER = "chapter"
+
+
+class Source(Enum):
+    """Источники работы"""
+
+    RSS = "rss"
+    SEARCH = "search"

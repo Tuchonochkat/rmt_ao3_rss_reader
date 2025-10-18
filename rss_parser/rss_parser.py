@@ -8,7 +8,7 @@ import feedparser
 
 from config import Config
 from utils.redis_connector import redis_connector
-from utils.schemas import UpdateReason
+from utils.schemas import Source, UpdateReason
 
 logger = logging.getLogger(__name__)
 
@@ -321,7 +321,7 @@ class RSSParser:
                 "updated_at": updated_date,
                 "source_feed": feed_url,
                 "update_reason": update_reason.value,
-                "source": "RSS",
+                "source": Source.RSS.value,
                 **metadata,  # Добавляем все извлеченные метаданные
             }
 
