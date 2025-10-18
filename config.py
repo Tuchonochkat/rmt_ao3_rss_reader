@@ -35,6 +35,8 @@ class Config:
         "23355485": "The Grinning Man - Philips & Teitler/Grose & Morris & Philips & Teitler/Grose",
         "107185864": "Вий - Байдо и Загот/Захарова/Петрановская | Viy - Baido & Zagot/Zakharova/Petranovskaya",  # всего 6 работ
         "116213980": "Айсвилль - Загот/Рубинский | Iceville - Zagot/Rubinsky",
+        "66539767": "First Date - Weiner/Zachary/Winsberg",
+        "49457": "Chess - Rice/Ulvaeus/Andersson",
     }
 
     CHECK_INTERVAL_MINUTES = int(os.getenv("CHECK_INTERVAL_MINUTES", "30"))
